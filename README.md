@@ -1,99 +1,99 @@
 # Lab: DOM-based cookie manipulation
 
-# 📚 Studijní materiál
-Tento repozitář slouží jako můj osobní studijní zápisník a přehled řešení laboratoří z platformy PortSwigger Web Security Academy
+## 📚 Studijní materiál
 
-# --
+Tento repozitář slouží jako můj osobní studijní zápisník a přehled řešení laboratoří z platformy **PortSwigger Web Security Academy**.
 
-# 📋 Přehled zranitelnosti
+---
 
-DOM-based cookie manipulation nastává v momentě, kdy klientský JavaScript přijímá uživatelsky řízená data (tzv. Source) a zapisuje je přímo do hodnota cookie záznamu v prohlížeči (Sink) bez dostatečné sanitizace nebo validace.
+## 📋 Přehled zranitelnosti
 
-Pokud aplikace následně čte tato manipulovaná cookie a nevhodně je zpracovává (například vrací jejich obsah do HTML bez ošetření), útočník může přesměrovat uživatele, podvrhnout data nebo vyvolat DOM-based Cross-Site Scripting (DOM XSS).
+DOM-based cookie manipulation nastává v momentě, kdy klientský JavaScript přijímá uživatelsky řízená data (tzv. **Source**) a zapisuje je přímo do hodnoty cookie v prohlížeči (**Sink**) bez dostatečné sanitizace nebo validace.
 
-# 🎯 Cíl laboratoře
+Pokud aplikace následně čte  manipulovanou cookie a nevhodně ji zpracovává (například vrací její obsah do HTML bez ošetření), útočník může podvrhnout data nebo vyvolat DOM-based Cross-Site Scripting (DOM XSS).
 
-Donutit oběť (bot v prostředí PortSwigger), aby navštívila námi vytvořený exploit server, který injektuje škodlivý kód do jejího prohlížeče přes cookie záznam a vyvolá funkci print().
+## 🎯 Cíl laboratoře
 
-# 🛠️ Mechanika zranitelnosti (Source -> Sink)
+Donutit oběť  aby navštívila námi vytvořený exploit server, který manipuluje s hodnotou cookie v jejím prohlížeči a následně vyvolá funkci `print()`.
 
-Source (Zdroj): window.location.search nebo parametr URL (např. zranitelný parametr na stránce produktu).
+## 🛠️ Mechanika zranitelnosti (Source → Sink)
 
-Sink (Místo zápisu): document.cookie
+- **Source (Zdroj):** `window.location.search` nebo jiný parametr URL.
+- **Sink (Místo zápisu):** `document.cookie`.
+- **Následný Sink (Místo vykonání):** Vložení hodnoty cookie do dokumentu bez bezpečného ošetření.
 
-Následný Sink (Místo vykonání): Výpis hodnoty z cookie do dokumentu bez enkódování.
+---
 
-# 🚀 Krok za krokem (Exploitation Process)
+## 🚀 Krok za krokem (Exploitation Process)
 
-1. Analýza zdrojového kódu a chování aplikace
+### 1. Analýza zdrojového kódu a chování aplikace
 
 Otevři libovolnou stránku produktu na cílovém webu.
 
-V prohlížeči otevři Developer Tools (F12) -> záložka Console nebo Sources.
+V prohlížeči otevři Developer Tools (`F12`) → záložku Console nebo Sources.
 
-Při prohlížení produktů si všimni, že aplikace ukládá např. naposledy navštívený produkt do cookie záznamu pomocí klientského skriptu:
+Při prohlížení produktů si všimni, že aplikace ukládá například naposledy navštívený produkt do cookie pomocí klientského skriptu:
 
+```javascript
 document.cookie = "lastViewedProduct=" + window.location.href;
+```
 
+Na hlavní stránce se pak tento odkaz vykresluje zpět do DOM jako HTML odkaz.
 
-Na hlavní stránce se pak tento odkaz vykresluje zpět do DOMu jako HTML link:
+### 2. Konstrukce Exploit Payloadu
 
-```html
-<a href="...">Last viewed product</a>
+Potřebujeme dostat vlastní JavaScript do hodnoty, která se později vykreslí v atributu `href`.
 
-
-2. Konstrukce Exploit Payloadu
-
-Potřebujeme vnutit do atributu href vlastní JavaScript, který po načtení okamžitě vykoná funkci print().
-
-Připravíme si payload, který ukončí původní URL hodnotu v cookie a vkládá škodlivé atributy:
+Ukázka testovacího payloadu:
 
 ```html
 "><script>print()</script>
+```
 
+Alternativní varianta:
 
-Nebo přes uvozovky v atributu href:
 ```html
 '/><script>print()</script>
+```
 
+### 3. Vytvoření Exploit Serveru
 
-3. Vytvoření Exploit Serveru
+V prostředí PortSwigger otevři **Exploit Server**.
 
-V PortSwigger prostředí otevři Exploit Server a do sekce Body vlož následující HTML/JS kód:
+Do sekce **Body** vlož exploit HTML/JavaScript odpovídající struktuře labu.
+
+Před použitím nahraď `YOUR-LAB-ID` skutečnou adresou své laboratoře.
+
 ```html
-<iframe src="https://YOUR-LAB-ID.web-security-academy.net/product?productId=1&'><script>print()</script>" onload="this.src='https://YOUR-LAB-ID.web-security-academy.net/'"></iframe>
+<iframe
+    src="https://YOUR-LAB-ID.web-security-academy.net/product?productId=1&"
+    onload="this.src='https://YOUR-LAB-ID.web-security-academy.net/'">
+</iframe>
+```
 
+### Proč to fungovalo?
 
-# Vysvětlení proč to fungovalo?
+1. `iframe` nejprve načte stránku produktu s upravenou URL.
+2. Klientský skript přečte aktuální adresu pomocí `window.location.href`.
+3. Načtená URL se uloží do `document.cookie`.
+4. Událost `onload` následně přesměruje iframe na hlavní stránku.
+5. Hlavní stránka přečte hodnotu z cookie a vykreslí ji do DOM.
+6. Pokud je hodnota vložena do HTML bez bezpečného ošetření, může dojít ke spuštění vloženého JavaScriptu a zavolání funkce `print()`.
 
-iframe nejprve načte stránku produktu s payloadem v URL.
+### 4. Doručení oběti (Deliver to Victim)
 
-Klientský skript na stránce produktu přečte tuto URL 
-```javascript
- (window.location.href) a zapíše ji do document.cookie.
+1. Vyzkoušej tlačítko **View exploit** a ověř, zda se v prohlížeči objeví tiskové okno.
+2. Klikni na **Deliver exploit to victim**.
+3. Počkej na potvrzení úspěšného vyřešení laboratoře:
 
-Událost onload následně přesměruje iframe na hlavní stránku (/).
+`Congratulations, you solved the lab!`
 
-Hlavní stránka přečte nebezpečnou hodnotu z document.cookie a vykreslí ji do DOMu.
+--
 
-Zapsaný 
-```html
-<script>print()</script> se vykoná a vyvolá okno tisku.
+## 🔍 Technické vysvětlení – Proč to fungovalo?
 
-4. Doručení oběti
- (Deliver to Victim)
+Aplikace ukládala celou URL produktu do cookie pomocí JavaScriptu, aniž by kontrolovala její obsah. Při návratu na hlavní stránku pak hodnotu cookie znovu vložila do HTML.
 
-Vyzkoušej tlačítko View exploit pro ověření, zda se ti v prohlížeči objeví tiskové okno.
+Tím vzniklo propojení mezi uživatelským vstupem (URL), cookie a DOM. Protože aplikace nepracovala s uloženou hodnotou bezpečně, prohlížeč ji interpretoval jako HTML, nikoliv jako obyčejný text.
 
-Klikni na Deliver exploit to victim.
-
-Počkej na potvrzení o úspěšném vyřešení laboratoře 
-(Congratulations, you solved the lab!).
-
-🛡️ Remediace (Jak zranitelnosti zabránit)
-
-Evikce nebezpečného klientského zápisu: Vyhýbejte se přímému zápisu neověřených vstupů z window.location do document.cookie.
-
-Context-aware Encoding: Pokud musíte číst hodnoty z cookie a vkládat je do DOMu, použijte bezpečné API jako textContent místo innerHTML nebo nebezpečné manipulace s href.
-
-Strict Cookie Attributes: Používejte příznaky HttpOnly u citlivých cookies, aby k nim JavaScript na straně klienta neměl vůbec přístup.
+Právě toho jsem využil. Upravená URL se uložila do cookie a při následném vykreslení na hlavní stránce došlo ke spuštění vloženého JavaScriptu `print()`.

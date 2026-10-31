@@ -38,6 +38,7 @@ document.cookie = "lastViewedProduct=" + window.location.href;
 
 Na hlavní stránce se pak tento odkaz vykresluje zpět do DOMu jako HTML link:
 
+```html
 <a href="...">Last viewed product</a>
 
 
@@ -47,18 +48,19 @@ Potřebujeme vnutit do atributu href vlastní JavaScript, který po načtení ok
 
 Připravíme si payload, který ukončí původní URL hodnotu v cookie a vkládá škodlivé atributy:
 
+```html
 "><script>print()</script>
 
 
 Nebo přes uvozovky v atributu href:
-
+```html
 '/><script>print()</script>
 
 
 3. Vytvoření Exploit Serveru
 
 V PortSwigger prostředí otevři Exploit Server a do sekce Body vlož následující HTML/JS kód:
-
+```html
 <iframe src="https://YOUR-LAB-ID.web-security-academy.net/product?productId=1&'><script>print()</script>" onload="this.src='https://YOUR-LAB-ID.web-security-academy.net/'"></iframe>
 
 
@@ -66,21 +68,27 @@ V PortSwigger prostředí otevři Exploit Server a do sekce Body vlož následuj
 
 iframe nejprve načte stránku produktu s payloadem v URL.
 
-Klientský skript na stránce produktu přečte tuto URL (window.location.href) a zapíše ji do document.cookie.
+Klientský skript na stránce produktu přečte tuto URL 
+```javascript
+ (window.location.href) a zapíše ji do document.cookie.
 
 Událost onload následně přesměruje iframe na hlavní stránku (/).
 
 Hlavní stránka přečte nebezpečnou hodnotu z document.cookie a vykreslí ji do DOMu.
 
-Zapsaný <script>print()</script> se vykoná a vyvolá okno tisku.
+Zapsaný 
+```html
+<script>print()</script> se vykoná a vyvolá okno tisku.
 
-4. Doručení oběti (Deliver to Victim)
+4. Doručení oběti
+ (Deliver to Victim)
 
 Vyzkoušej tlačítko View exploit pro ověření, zda se ti v prohlížeči objeví tiskové okno.
 
 Klikni na Deliver exploit to victim.
 
-Počkej na potvrzení o úspěšném vyřešení laboratoře (Congratulations, you solved the lab!).
+Počkej na potvrzení o úspěšném vyřešení laboratoře 
+(Congratulations, you solved the lab!).
 
 🛡️ Remediace (Jak zranitelnosti zabránit)
 
